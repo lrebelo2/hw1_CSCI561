@@ -15,15 +15,12 @@ class Node:
     # nLizards - number of lizards currently in this node's state. Numerically equal to the depth
     # parent - parent Node
     # nodeNumber - unique node identifier
-    def __init__(self, stateL, n_lizard, parentL, node_numberL):
+    def __init__(self, stateL, n_lizard, parentL, node_numberL, next_free_row):
         self.state = stateL
         self.nLizards = n_lizard
         self.parent = parentL
         self.nodeNumber = node_numberL
-        # if parentL is None:
-        #     self.rows = initiate_list(len(stateL[0]))
-        # else:
-        #     self.rows = parentL.rows
+        self.row = next_free_row
 
 
 def readfile(filename):
@@ -52,7 +49,6 @@ def readfile(filename):
         i += 1
     if (not flag_tree) and (n_lizard_goal > N):
         flag_doomed = True
-    print N, n_lizard_goal
     return dict(alg=alg, N=N, goal=n_lizard_goal, board=init_board, doomed=flag_doomed)
 
 
@@ -77,6 +73,7 @@ def goal_test(node_test, goal):
 
 
 def update_state(state, row, column, n):
+    tree = False
     # up
     x = row - 1
     board = deepcopy(state)
@@ -103,6 +100,7 @@ def update_state(state, row, column, n):
             board[row][x] = 3
         if board[row][x] == 2:
             x = 0
+            tree = True
         x -= 1
     # right
     x = column + 1
@@ -110,6 +108,7 @@ def update_state(state, row, column, n):
         if board[row][x] == 0:
             board[row][x] = 3
         if board[row][x] == 2:
+            tree = True
             x = n
         x += 1
 
@@ -155,23 +154,36 @@ def update_state(state, row, column, n):
         y += 1
 
     board[row][column] = 1
-    return board
+
+    return dict(board=board, tree=tree)
 
 
 def expand(frontier_arg, node, n):
+    flag = False
     node_number = node.nodeNumber
-    # which row will I look at now?
-
     for i in range(0, n):
-        if node.state[node.nLizards][i] == 0:
-            node_number += 1
-            new_node = Node(update_state(node.state, node.nLizards, i, n), node.nLizards + 1, node, node_number)
-            frontier_arg.put_nowait(new_node)
-
-
-def printM(M):
-    for i in M:
-        print i
+        if node.row < n:
+            if node.state[node.row][i] == 0:
+                flag = True
+                node_number += 1
+                new_state = update_state(node.state, node.row, i, n)
+                if not new_state['tree']:
+                    new_node = Node(new_state['board'], node.nLizards + 1, node, node_number, node.row + 1)
+                else:
+                    new_node = Node(new_state['board'], node.nLizards + 1, node, node_number, node.row)
+                frontier_arg.put_nowait(new_node)
+    if not flag and node.row + 1< n:
+        node.row += 1
+        for i in range(0, n):
+            if node.state[node.row][i] == 0:
+                flag = True
+                node_number += 1
+                new_state = update_state(node.state, node.row, i, n)
+                if not new_state['tree']:
+                    new_node = Node(new_state['board'], node.nLizards + 1, node, node_number, node.row + 1)
+                else:
+                    new_node = Node(new_state['board'], node.nLizards + 1, node, node_number, node.row)
+                frontier_arg.put_nowait(new_node)
 
 
 def search(initial, goal, algorithm, n):
@@ -179,10 +191,8 @@ def search(initial, goal, algorithm, n):
         frontier = Queue()
     else:
         frontier = LifoQueue()
-    visited_rows = initiate_list(n)
     frontier.put_nowait(initial)
     while not frontier.empty():
-        print frontier.qsize()
         node = frontier.get_nowait()
         if goal_test(node, goal):
             return node
@@ -191,11 +201,12 @@ def search(initial, goal, algorithm, n):
     return "FAIL"
 
 
-init_param = readfile("input4.txt")
-initialNode = Node(init_param['board'], 0, None, 1)
+init_param = readfile("input22.txt")
+initialNode = Node(init_param['board'], 0, None, 1, 0)
 if not init_param['doomed']:
     if init_param['alg'] == "BFS" or init_param['alg'] == "DFS":
         result = search(initialNode, init_param['goal'], init_param['alg'], init_param['N'])
+        print result
         if result == "FAIL":
             write_output(result, init_param['board'])
         else:

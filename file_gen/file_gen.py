@@ -1,5 +1,5 @@
-file_output = open("input9.txt", 'w')
-N=11
+file_output = open("input22.txt", 'w')
+N=20
 file_output.write("BFS\n")
 file_output.write(str(N) + "\n")
 file_output.write(str(N) + "\n")
