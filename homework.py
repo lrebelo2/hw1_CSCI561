@@ -395,7 +395,6 @@ if not init_param['doomed']:
     if init_param['alg'] == "BFS" or init_param['alg'] == "DFS":
         initialNode = Node(init_param['board'], 0, None, 1, 0)
         result = search(initialNode, init_param['goal'], init_param['alg'], init_param['N'])
-        print result
         if result == "FAIL":
             write_output(result, init_param['board'])
         else:
