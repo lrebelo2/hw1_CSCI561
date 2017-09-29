@@ -1,4 +1,4 @@
 README file
 
-Homework 1 for CSCI561
+Several search algorithms for solving the n-queens problem with obstacles
 
